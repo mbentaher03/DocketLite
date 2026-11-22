@@ -93,3 +93,7 @@ def create_item(payload: ItemCreate):
         session.commit()
         session.refresh(item)
         return item
+@app.get("/version")
+def version():
+    """Return the release tag baked into the image."""
+    return {"version": os.getenv("APP_VERSION", "dev")}
