@@ -1,54 +1,45 @@
 name: CI
-
 on:
-  push:
-    branches:
-      - main
-      - "step-**"
   pull_request:
-    branches:
-      - main
-
+    branches: [main]
+  push:
+    branches: [main]
 jobs:
-  test-and-docker:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Run pytest and generate JUnit report
+      - name: Run pytest (JUnit report)
         run: pytest --junitxml=junit.xml
-
-      - name: Upload pytest JUnit report
+      - name: Upload JUnit report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-junit-report
           path: junit.xml
           if-no-files-found: ignore
-
-      - name: Build Docker image and verify /health
+  docker-build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image and verify /health
         run: |
           docker build -t docketlite:ci .
           docker run -d --name docketlite-ci -p 8080:8080 docketlite:ci
-          trap 'docker stop docketlite-ci >/dev/null 2>&1 || true; docker rm docketlite-ci >/dev/null 2>&1 || true' EXIT
+          trap 'docker rm -f docketlite-ci >/dev/null 2>&1 || true' EXIT
           for i in $(seq 1 20); do
             if curl -fsS http://localhost:8080/health >/dev/null; then
-              echo "Container /health check succeeded."
-              exit 0
+              echo "health OK"; exit 0
             fi
             sleep 1
           done
-          echo "Container /health check timed out."
           docker logs docketlite-ci
           exit 1
