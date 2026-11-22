@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: docketlite-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-docketlite}
+      POSTGRES_USER: ${POSTGRES_USER:-docketlite}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docketlite_pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - docketlite_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-docketlite} -d $${POSTGRES_DB:-docketlite}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docketlite-api
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-docketlite}:${POSTGRES_PASSWORD:-docketlite_pass}@db:5432/${POSTGRES_DB:-docketlite}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - docketlite_net
+    restart: unless-stopped
+
+networks:
+  docketlite_net:
+    driver: bridge
+
+volumes:
+  pgdata:
