@@ -58,7 +58,7 @@ class ItemRead(BaseModel):
 # App
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="DevOps Starter App", version="0.1.0")
+app = FastAPI(title="DocketLite API", version="0.1.0")
 
 
 @app.get("/health")
