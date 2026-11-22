@@ -64,7 +64,7 @@ app = FastAPI(title="DevOps Starter App", version="0.1.0")
 @app.get("/health")
 def health():
     """Liveness + optional DB reachability check."""
-    result = {"status": "ok"}
+    result = {"status": "broken"}
     if os.getenv("DATABASE_URL"):
         try:
             with engine.connect() as conn:
