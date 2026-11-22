@@ -34,13 +34,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy to staging and check health
-        env:  IMAGE_TAG: ${{ github.ref_name }}
+        env:
+          IMAGE_TAG: ${{ github.ref_name }}
         run: |
           docker compose -f compose.staging.yaml pull
           docker compose -f compose.staging.yaml up -d
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8080/health; then
-              echo; curl -fsS http://localhost:8080/version; echo; exit 0
+              echo
+              curl -fsS http://localhost:8080/version
+              echo
+              exit 0
             fi
             sleep 2
           done
